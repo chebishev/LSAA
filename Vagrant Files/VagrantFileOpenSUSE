@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.define "openSUSE" do |os|
+    # Specify the base box for openSUSE Leap 15.6
+    os.vm.box = "generic/opensuse15"
+
+    # Specify VirtualBox as the provider
+    os.vm.provider "virtualbox" do |vb|
+      vb.name = "openSUSE-vm"
+      vb.memory = "2048"  # Set memory to 2GB
+      vb.cpus = 2         # Set number of CPUs
+    end
+
+    # Attach multiple disks (example: 6 disks of 5GB each)
+    (0..5).each do |i|
+      os.vm.provider "virtualbox" do |vb|
+        # Create and attach additional virtual disks
+        vb.customize ["createhd", "--filename", "disk-#{i}.vdi", "--size", 5120]
+        vb.customize [
+          "storageattach", :id,
+          "--storagectl", "SATA Controller",
+          "--port", i + 1,
+          "--device", 0,
+          "--type", "hdd",
+          "--medium", "disk-#{i}.vdi"
+        ]
+      end
+    end
+  end
+end

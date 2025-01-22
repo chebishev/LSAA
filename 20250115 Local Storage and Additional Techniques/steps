@@ -1,0 +1,37 @@
+lsblk
+sudo dnf install https://zfsonlinux.org/epel/zfs-release-2-3.el9.noarch.rpm
+sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-openzfs-el-9
+sudo dnf install -y epel-release
+sudo dnf install -y kernel-devel
+sudo dnf install -y zfs
+echo "zfs" | sudo tee -a /etc/modules-load.d/zfs.conf
+sudo reboot
+
+# check if ZFS is loaded properly and the kernel module is active:
+sudo modprobe zfs
+sudo zfs version
+# create 3x2 pool:
+# sudo zpool create zfs-raid10-3x2 mirror /dev/sd{b,c} mirror /dev/sd{d,e} mirror /dev/sd{f,g}
+# sudo zpool status
+
+# create key file:
+sudo mkdir -p /root/zfs-keys
+sudo chmod 700 /root/zfs-keys
+sudo dd if=/dev/urandom of=/root/zfs-keys/zfs.key bs=32 count=1
+sudo chmod 600 /root/zfs-keys/zfs.key
+
+# create encrypted pool (3x2):
+sudo zpool create \
+  -O encryption=on \
+  -O keyformat=raw \
+  -O keylocation=file:///root/zfs-keys/zfs.key \
+  zfs-raid10-3x2 \
+  mirror /dev/sd{b,c} \
+  mirror /dev/sd{d,e} \
+  mirror /dev/sd{f,g}
+
+# check
+sudo zpool status
+sudo zfs get encryption
+
+

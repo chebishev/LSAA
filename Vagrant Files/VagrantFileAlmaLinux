@@ -1,0 +1,29 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+    config.vm.define "hashicorp" do |h|
+      h.vm.box = "almalinux-9.5"
+      
+      # Specify VirtualBox as the provider
+      h.vm.provider "virtualbox" do |vb|
+        vb.name = "hashicorp-vm"
+      end
+  
+      # Attach multiple disks
+      (0..3).each do |i|
+        h.vm.provider "virtualbox" do |vb|
+          vb.customize ["createhd", "--filename", "disk-#{i}.vdi", "--size", 20480]
+          vb.customize [
+            "storageattach", :id,
+            "--storagectl", "SATA Controller",
+            "--port", i + 1,
+            "--device", 0,
+            "--type", "hdd",
+            "--medium", "disk-#{i}.vdi"
+          ]
+        end
+      end
+    end
+  end
+  
