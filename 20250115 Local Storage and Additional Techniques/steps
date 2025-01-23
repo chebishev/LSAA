@@ -34,4 +34,14 @@ sudo zpool create \
 sudo zpool status
 sudo zfs get encryption
 
-
+# Automate Pool Import with the Key File:
+# 1. Edit /etc/zfs/zfs.conf
+sudo dnf install nano
+sudo nano /etc/zfs/zfs.conf
+ZFS_KEY_LOCATION=/root/zfs-keys/zfs.key
+# 2. Update zpool.cache
+sudo zpool set cachefile=/etc/zfs/zpool.cache zfs-raid10-3x2
+# 3. Enable the corresponding services
+sudo systemctl enable zfs-import-cache.service
+sudo systemctl enable zfs-mount.service
+sudo systemctl enable zfs.target
