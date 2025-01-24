@@ -1,9 +1,8 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
 Vagrant.configure("2") do |config|
   # Uncomment the line bellow to enter the VM without password when using vagrant ssh
   # config.ssh.insert_key = false
   
-  config.vm.box = "shekeriev/opensuse-leap-15.6"
+  config.vm.box = "boxen/opensuse-15.6"
+  # this will remove the message about SMB credentials
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 end
