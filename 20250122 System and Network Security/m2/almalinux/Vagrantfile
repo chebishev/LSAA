@@ -1,0 +1,9 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Uncomment the line bellow to enter the VM without password when using vagrant ssh
+  # config.ssh.insert_key = false
+  
+  config.vm.box = "shekeriev/almalinux-9.5"
+end
