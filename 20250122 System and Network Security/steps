@@ -1,0 +1,48 @@
+# preparations:
+# Two openSUSE 16 machines
+# The first one (VM1) is with 2 network adapters -> NAT and internal network
+# The second one (VM2) is with 1 network adapter -> internal network
+
+# on VM1 enable firewalld:
+sudo systemctl enable --now firewalld
+# check
+firewall-cmd --state # returns "running"
+# or for more information 
+sudo systemctl status firewalld
+# after that install dhcp-server
+sudo zypper install dhcp-server
+# add the second adapter enp0s8 as DHCPD_INTERFACE
+sudo vi /etc/sysconfig/dhcpd
+# add the following lines:
+DHCPD_INTERFACE="enp0s8"
+# Add ip address to the second adapter:
+nmcli connection Wired\ connection\ 2 ipv4.method manual ipv4.addresses 192.168.99.1/24 ipv4.gateway 192.168.99.254 ipv4.dns "8.8.8.8 8.8.4.4" 
+# restart the adapter
+nmcli connection down Wired\ connection\ 2
+nmcli connection up Wired\ connection\ 2
+# Configure the DHCP server
+sudo vi /etc/dhcpd.conf
+# uncomment default-lease-time, max-lease-time, autoritative, subnet
+# change the network to 192.168.99.0/24, range 99.100 - 99.110, router 192.168.99.1 and google dns servers
+# apply the new settings
+sudo systemctl enable --now dhcpd
+# firewall rules
+# I have firewalld up and running so first enable ip forwarding:
+sudo vi /etc/sysctl.conf
+net.ipv4.ip_forward = 1
+sudo sysctl -p
+# checking if internal is in the list of zones:
+sudo firewall-cmd --get-zones
+# add enp0s8 to the internal zone:
+sudo firewall-cmd --permanent --zone=internal --add-interface=enp0s8
+# allow internet access to the internal zone:
+sudo firewall-cmd --permanent --zone=internal --add-masquerade
+# add forwarding from enp0s3 to enp0s8:
+sudo firewall-cmd --permanent --zone=internal --add-forward
+# allo public zone to allow internet traffic for the main interface:
+sudo firewall-cmd --permanent --zone=public --add-interface=enp0s3
+# add dhcp service to the zones:
+sudo firewall-cmd --permanent --zone=public --add-service=dhcp
+sudo firewall-cmd --permanent --zone=internal --add-service=dhcp
+# apply the changes:
+sudo firewall-cmd --reload
