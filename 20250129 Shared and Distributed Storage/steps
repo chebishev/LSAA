@@ -1,0 +1,65 @@
+# Prepare 3 machines (VM1 for server and VM2 and VM3 for clients)
+# rewrite the vagrant file to name them homework-vmX, where x is number from 1 to 3.
+# also change the network from 99 to 2, because of a problem with existing network adapters
+
+# TASK 1 - SAMBA
+# VM1
+sudo zypper install samba samba-client
+# after that (as in practice file) enable and start smb,nmb services, 
+# also add firewall exception and reload the configuration
+sudo systemctl enable smb nmb
+sudo systemctl start smb nmb
+sudo firewall-cmd --add-service samba --permanent
+sudo firewall-cmd --reload
+# add group that will be used for samba shares
+sudo groupadd homework-task1
+# add folder to share
+sudo mkdir homework-task1
+# add the corresponding permissions
+sudo chgrp homework-task1 homework-task1
+sudo chmod 770 homework-task1
+# add two users to the group
+sudo useradd vm2
+sudo useradd vm3
+sudo usermod -a -G homework-task1 vm2
+sudo usermod -a -G homework-task1 vm3
+# create passwords and enable the users
+sudo smbpasswd -a vm2
+sudo smbpasswd -a vm3
+sudo smbpasswd -e vm2
+sudo smbpasswd -e vm3
+# create backup of the original /etc/samba/smb.conf
+sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
+sudo vi /etc/samba/smb.conf
+# restart and test config
+sudo systemctl restart smb
+testparm
+# VM2 and VM3
+sudo zypper install samba-client
+# test with:
+smbclient //homework-vm1/homework-task1 -U vm2
+smbclient //homework-vm1/homework-task1 -U vm3
+# test with other user:
+sudo user add vmuser
+sudo smbpasswd -a vmuser
+sudo smbpasswd -e vmuser
+# after ACCESS DENIED add the user to the homework-task1 group and try again
+sudo usermod -a -G homework-task1 vmuser
+
+# TASK 2 - NFS
+# VM1 (again as in practice)
+sudo zypper install nfs-kernel-server
+sudo systemctl enable --now nfsserver
+# check for exports
+sudo exportfs
+# create folder to share
+sudo mkdir homework_task2
+# ip addresses of vm2 and vm3 must be 2.132 and 2.133
+sudo vi /etc/exports
+sudo exportfs -rav
+# allow service communication
+sudo firewall-cmd --add-service nfs --permanent
+# reload the firewall rules
+sudo firewall-cmd --reload
+# VM2 and VM3
+sudo zypper install nfs-client
