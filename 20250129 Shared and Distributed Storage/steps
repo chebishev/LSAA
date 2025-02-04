@@ -62,4 +62,8 @@ sudo firewall-cmd --add-service nfs --permanent
 # reload the firewall rules
 sudo firewall-cmd --reload
 # VM2 and VM3
-sudo zypper install nfs-client
+# the nfs client is already installed, so we proceed with the next step -> mount the share
+sudo mkdir -p /mnt/homework_task2
+sudo mount -t nfs4 homework-vm1:/home/vagrant/homework_task2 /mnt/homework_task2
+# The share can be mounted for autostart on both machines as in the practice file with adding this row in /etc/fstab:
+homework-vm1:/home/vagrant/homework_task2 /mnt/homework_task2 nfs4 defaults 0 0
