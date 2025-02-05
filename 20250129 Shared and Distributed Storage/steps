@@ -67,3 +67,86 @@ sudo mkdir -p /mnt/homework_task2
 sudo mount -t nfs4 homework-vm1:/home/vagrant/homework_task2 /mnt/homework_task2
 # The share can be mounted for autostart on both machines as in the practice file with adding this row in /etc/fstab:
 homework-vm1:/home/vagrant/homework_task2 /mnt/homework_task2 nfs4 defaults 0 0
+
+# TASK 3 - iSCSI
+# again as in practice
+# VM1:
+sudo zypper install targetcli-fb
+# the fisk files will be stored here:
+sudo mkdir homework-task3
+# start the administration tool
+sudo targetcli
+# Switch to the fileio backend
+cd backstores/fileio
+# create 10GB fileio storage object 
+create homework_disk /home/vagrant/homework-task3/homework_disk.img 10G
+# switch to the iscsi functions
+cd /iscsi
+# Define a new target with default name
+create
+# Enter the target
+cd iqn.2003-01.org.linux-iscsi.homework-vm1.x8664:sn.5b76311274cb/tpg1/luns
+# Create a new LUN
+create /backstores/fileio/homework_disk
+# Created LUN 0.
+# before registering the initator I am switching to vm2 to get its name
+# VM2
+sudo zypper install open-iscsi
+sudo cat /etc/iscsi/initiatorname.iscsi
+# the name is iqn.1996-04.de.suse:01:43c4c54ab6a5 so we can use it in VM1 now
+# but first lets reboot vm2
+sudo reboot
+# VM1
+# Adjust access to the resource
+cd ../acls
+# register the initiator
+create iqn.1996-04.de.suse:01:43c4c54ab6a5
+# Created Node ACL for iqn.1996-04.de.suse:01:43c4c54ab6a5
+# Created mapped LUN 0.
+# enter the record and set user and password 
+# (the defaults in vm2 /etc/iscsi/iscisd.conf are username/password)
+cd iqn.1996-04.de.suse:01:43c4c54ab6a5/
+set auth userid=username
+set auth password=password
+# now check the authentication flag
+# as expected it is [no-gen-acls, no-auth]
+# so we are going to /iscsi/iqn.2003-01.org.linux-iscsi.homework-vm1.x8664:sn.5b76311274cb/tpg1
+# and execute:
+set attribute authentication=1
+exit
+# adjust the firewall
+sudo firewall-cmd --add-service iscsi-target --permanent
+sudo firewall-cmd --reload
+sudo systemctl enable --now targetcli.service
+# aand back to VM2
+# VM2
+# edit the /etc/iscsi/iscsi.conf
+sudo vi /etc/iscsi/iscsi.conf
+# initiate target discovery
+sudo iscsiadm -m discovery -t sendtargets -p homework-vm1
+# iscsiadm: connect to 192.168.2.131 timed out
+# iscsiadm: connect to 192.168.2.131 timed out
+# iscsiadm: connect to 192.168.2.131 timed out
+# so I am changing the hostname with the corresponding ip
+sudo iscsiadm -m discovery -t sendtargets -p 192.168.99.160
+# 192.168.99.160:3260,1 iqn.2003-01.org.linux-iscsi.homework-vm1.x8664:sn.5b76311274cb
+# confirm:
+sudo iscsiadm -m node -o show
+# login to the target
+sudo iscsiadm -m node --login
+# confirm the established connection
+sudo iscsiadm -m session -o show
+# now we have sdb as new partion
+sudo fdisk -l
+# and now (exactly as in the practice file) we can create partition, filesystem and mount it
+sudo fdisk /dev/sdb
+n, p, 1, Enter, Enter, w
+sudo mkfs.ext4 /dev/sdb1
+sudo mkdir -p /mnt/homework_task3
+sudo mount /dev/sdb1 /mnt/homework_task3
+# It's there: /dev/sdb1      ext4      9.8G   24K  9.3G   1% /mnt/homework-task3
+# for “permanent” mounting we have to add in /etc/fstab with the following:
+UUID="a359e31d-f6c9-43db-a3bc-8d9a612fe782" /mnt/homework_task3 ext4 _netdev 0 0
+# the id was obtained from 
+sudo blkid /dev/sdb1
+# /dev/sdb1: UUID="a359e31d-f6c9-43db-a3bc-8d9a612fe782" BLOCK_SIZE="4096" TYPE="ext4" PARTUUID="592f466f-01"
