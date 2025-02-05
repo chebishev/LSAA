@@ -8,12 +8,12 @@ Vagrant.configure("2") do |config|
   # config.vm.box = "boxen/opensuse-15.6"
   # config.vm.synced_folder ".", "/vagrant", disabled: true
 
-  1.upto(3) do |i|
+  1.upto(4) do |i|
     config.vm.define "homework-vm#{i}" do |node|
       node.vm.network "private_network", ip: "192.168.2.13#{i}"
       node.vm.hostname = "homework-vm#{i}.lsaa.lab"
       node.vm.provision "shell", inline: <<-SHELL
-        for i in $(seq 1 3); do echo "192.168.2.$((130 + i))    homework-vm$i.lsaa.lab    homework-vm$i" | sudo tee -a /etc/hosts; done
+        for i in $(seq 1 4); do echo "192.168.2.$((130 + i))    homework-vm$i.lsaa.lab    homework-vm$i" | sudo tee -a /etc/hosts; done
       SHELL
     end
   end
