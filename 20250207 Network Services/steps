@@ -1,0 +1,29 @@
+# for opensuse to install 389-ds
+sudo zypper install 389-ds
+# I'll use the interactive installation instead of creating setup.inf
+sudo dscreate interactive
+# after going trough the steps activate the service
+sudo systemctl enable dirsrv@homework
+sudo systemctl start dirsrv@homework
+# check status with
+sudo dsctl homework status
+# Instance "homework" is running
+ldapsearch -x -LLL -H ldap://localhost -b "dc=homework,dc=lsaa,dc=lab"
+# list the demo data:
+ldapsearch -x -LLL -H ldap://localhost -b "dc=homework,dc=lsaa,dc=lab" dn
+# Remove the user:
+ldapdelete -x -D "cn=Atanas Chebishev" -W -H ldap://localhost "uid=demo_user,ou=people,dc=homework,dc=
+lsaa,dc=lab"
+# remove the group
+ldapdelete -x -D "cn=Atanas Chebishev" -W -H ldap://localhost "cn=demo_group,ou=groups,dc=homework,dc=
+lsaa,dc=lab"
+# check if the cleanup is successful:
+ldapsearch -x -LLL -H ldap://localhost -b "dc=homework,dc=lsaa,dc=lab"
+# Create groups and users .ldif files
+# load the files:
+ldapadd -x -D "cn=Atanas Chebishev" -W -H ldap://localhost -f groups.ldif
+ldapadd -x -D "cn=Atanas Chebishev" -W -H ldap://localhost -f users.ldif
+# add multy user to the group 10000
+# create file
+# load the file:
+ldapmodify -x -D "cn=Atanas Chebishev" -W -H ldap://localhost -f add_multyUser_to_group10000.ldif

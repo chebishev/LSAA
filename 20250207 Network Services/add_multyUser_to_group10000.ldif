@@ -1,0 +1,4 @@
+dn: cn=main,ou=groups,dc=homework,dc=lsaa,dc=lab
+changetype: modify
+add: memberUid
+memberUid: multyUser

@@ -1,0 +1,9 @@
+dn: cn=main,ou=groups,dc=homework,dc=lsaa,dc=lab
+objectClass: posixGroup
+cn: main
+gidNumber: 10000
+
+dn: cn=secondary,ou=groups,dc=homework,dc=lsaa,dc=lab
+objectClass: posixGroup
+cn: secondary
+gidNumber: 10001

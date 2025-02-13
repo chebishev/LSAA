@@ -1,0 +1,35 @@
+dn: uid=mainUser1,ou=people,dc=homework,dc=lsaa,dc=lab
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Main User One
+sn: One
+uid: mainUser1
+uidNumber: 3001
+gidNumber: 10000
+homeDirectory: /home/mainUser1
+loginShell: /bin/bash
+userPassword: {CRYPT}x
+
+dn: uid=mainUser2,ou=people,dc=homework,dc=lsaa,dc=lab
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Main User Two
+sn: Two
+uid: mainUser2
+uidNumber: 3002
+gidNumber: 10000
+homeDirectory: /home/mainUser2
+loginShell: /bin/bash
+userPassword: {CRYPT}x
+
+dn: uid=multyUser,ou=people,dc=homework,dc=lsaa,dc=lab
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Multy User
+sn: User
+uid: multyUser
+uidNumber: 3003
+gidNumber: 10001
+homeDirectory: /home/multyUser
+loginShell: /bin/bash
+userPassword: {CRYPT}x
