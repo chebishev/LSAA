@@ -1,0 +1,32 @@
+# install docker on openSUSE 16 using the official documentation:
+# https://en.opensuse.org/Docker
+zypper install docker docker-compose docker-compose-switch
+sudo systemctl enable docker
+sudo usermod -G docker -a $USER
+newgrp docker
+sudo systemctl restart docker
+# docker version to check
+# after that, after some research in docker hub
+docker run -it --name customSUSE opensuse/leap /bin/bash
+# the image is very light, so there is no sudo, there is nothing.
+zypper install sudo
+sudo zypper refresh
+sudo zypper update
+sudo zypper install apache2
+sudo zypper install apache2-utils
+sudo zypper install vi
+# add ServerName localhost
+sudo mkdir /srv/www/htdocs/default
+echo '<h1>SoftUni @chebishev is here!</h1>' | sudo tee /srv/www/htdocs/default/index.html
+<h1>SoftUni @chebishev is here!</h1>
+# add Document root to /etc/apache2/vhosts.d/000-default.conf
+sudo vi /etc/apache2/vhosts.d/000-default.conf
+DocumentRoot "/srv/www/htdocs/default"
+sudo apache2ctl -D BACKGROUND
+# so we have the apache server in there. Now we have to run the container with exposing its port to the parent machine
+# the name of the container is customSUSE
+docker start customSUSE
+docker exec -it customSUSE /bin/bash -c "sudo apache2ctl -D BACKGROUND"
+# the apache server must be running, but i still need the ip of the container
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' customSUSE
+# it returns 172.17.0.2
