@@ -1,11 +1,13 @@
 # install docker on openSUSE 16 using the official documentation:
 # https://en.opensuse.org/Docker
-zypper install docker docker-compose docker-compose-switch
+sudo zypper install docker docker-compose docker-compose-switch
 sudo systemctl enable docker
 sudo usermod -G docker -a $USER
 newgrp docker
 sudo systemctl restart docker
 # docker version to check
+# run hello world container
+docker run hello-world
 # after that, after some research in docker hub
 docker run -it --name customSUSE opensuse/leap /bin/bash
 # the image is very light, so there is no sudo, there is nothing.
@@ -30,3 +32,8 @@ docker exec -it customSUSE /bin/bash -c "sudo apache2ctl -D BACKGROUND"
 # the apache server must be running, but i still need the ip of the container
 docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' customSUSE
 # it returns 172.17.0.2
+sudo vi Dockerfile
+docker build -t customSUSE .
+# test
+docker run -d -p 80:80 --name customSUSE customsuse
+curl localhost
