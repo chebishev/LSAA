@@ -1,0 +1,95 @@
+# I've decided to use 3 machines for this task
+# 2 for the cluster nodes and 1 for target server
+# The names are opensuse-m1, opensuse-m2 and opensuse-m3
+# The positions: iSCSI Target server, Cluster Node1, Cluster Node 2, 
+# The addressing: 192.168.97.101    102    103
+# install open-iscsi on the initiators and get the initiator names
+# also edit the /etc/iscsi/iscsid.conf
+# change node.startup to automatic
+# uncomment the line node.session.auth.authmethod = CHAP
+# uncomment the line node.session.auth.username = username
+# uncomment the line node.session.auth.password = password
+# IQNs for the cluster nodes are
+iqn.1996-04.de.suse:01:c6228c3ffac1
+iqn.1996-04.de.suse:01:ff8c804bea0
+
+# So the m1 will be the Target server
+sudo zypper install targetcli-fb
+# enable the service
+# the disk file will be stored here:
+sudo mkdir -p /storage/iscsi
+# run the tool and make the configuration
+sudo targetcli
+cd backstores/fileio
+create homework_disk /storage/iscsi/homework_disk.img 10G
+# Created fileio homework_disk with size 10737418240
+# back to /iscsi to create the target
+cd /iscsi
+create
+# Created target iqn.2003-01.org.linux-iscsi.opensuse-m1.x8664:sn.a81bc09c8bab.
+# Created TPG 1.
+# Global pref auto_add_default_portal=true
+# Created default portal listening on all IPs (0.0.0.0), port 3260.
+# Go into the newly created TPG/luns
+cd iqn.2003-01.org.linux-iscsi.opensuse-m1.x8664:sn.a81bc09c8bab/tpg1/luns 
+# Create a new LUN
+create /backstores/fileio/homework_disk
+# Created LUN 0.
+# now return to /acls to add the initiators
+cd ../acls
+create iqn.1996-04.de.suse:01:c6228c3ffac1
+# Created Node ACL for iqn.1996-04.de.suse:01:c6228c3ffac1
+# Created mapped LUN 0.
+create iqn.1996-04.de.suse:01:ff8c804bea0
+# Created Node ACL for iqn.1996-04.de.suse:01:ff8c804bea0
+# Created mapped LUN 0.
+# add user/password to each node
+cd iqn.1996-04.de.suse:01:xxxxxx
+set auth userid=username
+set auth password=password
+set attribute authentication=1
+exit
+# Global pref auto_save_on_exit=true
+# Configuration saved to /etc/target/saveconfig.json
+# verify the configuration
+sudo targetcli ls
+# adjust the firewall
+sudo firewall-cmd --add-service iscsi-target --permanent
+sudo firewall-cmd --reload
+sudo systemctl enable --now targetcli.service
+
+
+# on opensuse-m2 and opensuse-m3
+# discover the target server
+sudo iscsiadm -m discovery -t sendtargets -p opensuse-m1
+# 192.168.97.101:3260,1 iqn.2003-01.org.linux-iscsi.opensuse-m1.x8664:sn.a81bc09c8bab
+# login to the target:
+sudo iscsiadm -m node --login
+# on opensuse-m2
+sudo lsblk
+sudo pvcreate /dev/sdb
+# Physical volume "/dev/sdb" successfully created.
+sudo vgcreate vg_web /dev/sdb
+# Volume group "vg_web" successfully created
+# to see the available space:
+sudo vgdisplay vg_web
+# use the available space for lvm:
+sudo lvcreate -l 100%FREE -n lv_web vg_web
+# Logical volume "lv_web" created.
+sudo mkfs.ext4 /dev/vg_web/lv_web
+sudo mkdir -p /mnt/web
+sudo mount /dev/vg_web/lv_web /mnt/web
+# opensuse-m3
+sudo vgchange -ay vg_web
+sudo mkdir -p /mnt/web
+sudo mount /dev/vg_web/lv_web /mnt/web
+# now we have the storage mounted on both nodes
+# create simple text file there:
+echo 'Hello from Shared LVM' | sudo tee /mnt/web/readme.txt
+# so we can setup High availabillity on both nodes:
+sudo zypper install pacemaker corosync
+# enable and start the services:
+sudo systemctl enable corosync
+sudo systemctl enable pacemaker
+sudo systemctl start corosync
+sudo systemctl start pacemaker
