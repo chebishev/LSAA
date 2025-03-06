@@ -1,0 +1,6 @@
+#create a service group (APP-SVC) to monitor the two services as a group 
+#and host group (APP-HST) to monitor the two clients as a group
+########################################################
+# 192.168.81.151    opensuse-m1.lsaa.lab    opensuse-m1
+# 192.168.81.152    opensuse-m2.lsaa.lab    opensuse-m2
+# 192.168.81.153    opensuse-m3.lsaa.lab    opensuse-m3
