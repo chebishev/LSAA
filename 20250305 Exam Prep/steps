@@ -1,0 +1,100 @@
+# Containers
+# check how to install docker on openSUSE:
+sudo zypper install docker
+sudo systemctl enable docker
+sudo systemctl start docker
+# check if docker can be started without sudo
+docker info
+# start named container 
+docker container run -it --name tiger hub.zahariev.pro/hello-world
+
+mkdir html
+echo "Kvoto se iska" > ~/html/index.html
+docker container run -d --name httpd-web -p 8080:80 -v ~/html:/usr/local/apache2/htdocs httpd hub.zahariev.pro/httpd
+curl http://localhost:8080
+
+# Storage
+lsblk
+sudo parted -s /dev/sdb -- mklabel msdos mkpart primary 2048s -0m set 1 raid on
+sudo parted -s /dev/sdc -- mklabel msdos mkpart primary 2048s -0m set 1 raid on
+# или fdisk...
+lsblk
+# check mdadm
+sudo zypper install mdadm
+sudo mdadm --create /dev/md0 --level 1 --raid-devices 2 /dev/sd{b,c}1
+y
+sudo mdadm --detail /dev/md0
+sudo mdadm --detail --brief /dev/md0 | sudo tee -a /etc/mdadm.conf
+sudo mkfs.ext4 /dev/md0
+sudo mkdir -p /storage/raidmd
+sudo mount /dev/md0 /storage/raidmd
+blkid /dev/md0
+sudo vi /etc/fstab
+# UUID=""    /storage/raidmd    ext4    defaults    0 0
+# check with unmount md0 and mount all systems in fstab
+sudo umount /storage/raidmd
+sudo mount -av
+
+# iscsi
+sudo zypper install targetcli
+sudo mkdir /var/lib/iscsi-images
+sudo targetcli
+cd backstores/fileio
+create D1 /var/lib/iscsi-images/D1GB.img 1G
+cd iscsi
+create iqn.2025-01.lab.lsaa:str.tgt1
+cd iqn.2025-01.lab.lsaa:str.tgt1/tpg1/luns
+create /backstores/fileio/D1
+cd ../aclscreate iqn.2025-01.lab.lsaa:lba.init1
+exit
+sudo systemctl enable --now target
+sudo firewall-cmd --add-service iscsi-target --permanent
+sudo firewall-cmd --reload 
+
+# on LBA machine:
+sudo zypper install iscsi-initiator-utils
+# change the name to match the on from the storage machine
+sudo vi /etc/iscsi/initiatorname.iscsi
+sudo iscsiadm -m node --login
+# if we see the partition
+sudo parted -s /dev/sdb/ -- mklabel msdos mkpart primary 16384s -0m
+sudo mkfs.xfs /dev/sdb1
+sudo mkdir -p /storage/iscsi
+sudo mount /dev/sdb1 /storage/iscsi
+blkid /dev/sdb1
+sudo vi /etc/fstab
+# UUID=""    /storage/iscsi    xfs    -netdev    0 0
+# check with unmount md0 and mount all systems in fstab
+sudo umount /storage/raidmd
+sudo mount -av
+
+# on STR machine
+# install nfs
+sudo zypper install nfs-utils
+sudo nfsconf --set nfsd vers4 y
+sudo nfsconf --set nfsd vers3 n
+sudo nfsconf --set nfsd udp n
+sudo nfsconf --set nfsd tpc y
+sydo systemctl enable --now nfs-server
+sudo firewall-cmd --add-service nfs --permanent
+sudo mkdir -p /storage/nfs
+sudo vi /etc/exports
+# add the WBA and WBB ip addresses
+/storage/nfs 192.168.10.40(rw) 192.168.10.50(rw)
+sudo exportfs -rav
+
+# on WBA machine
+sudo zypper install nfs-utils
+sudo mkdir -p /storage/export
+sudo mount -t nfs4 str:/storage/nfs /storage/export
+df -hT
+sudo umount -at nfs4
+sudo vi /etc/fstab
+str:/storage/nfs    storage/export    nfs4    defaults    0 0
+sudo mount -av
+# on WBB machine - same steps
+
+# Configuration Management
+# install ansible on LBA machine
+sudo zypper install ansible
+cd /etc/ansible
