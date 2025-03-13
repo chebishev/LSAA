@@ -98,3 +98,65 @@ sudo mount -av
 # install ansible on LBA machine
 sudo zypper install ansible
 cd /etc/ansible
+sudo vi hosts
+[web]
+wba.lsaa.lab
+wbb.lsaa.lab
+# create index
+echo "LSAA Exam" > ~/index.hmtl
+touch exam.yml
+# or
+touch exam.yaml
+
+ssh-keygen
+ssh-copy-id exam@wba.lsaa.lab
+ssh-copy-id exam@wbb.lsaa.lab
+ansible-playbook ~/exam.yaml --syntax-check
+ansible-playbook ~/exam.yaml
+
+# Web Servers (after successful playbook run)
+# on WBA:
+sudo vi /etc/nginx/conf.d/vhost-port.conf
+sudo mkdir /usr/share/nginx/vhost-port
+sudo nginx -t
+sudo systemctl restart nginx
+sudo firewall-cmd --add-port 8080/tcp --permanent
+sudo firewall-cmd --reload
+curl http://localhost
+curl http://localhost:8080
+echo "<h1>LSAA Exam on WBA</h1>" | sudo tee /usr/share/nginx/vhost-port/index.html
+# on WBB: SAME!
+
+# Load Balancing
+# on LBA:
+sudo zypper install haproxy
+sudo vi /etc/haproxy/haproxy.cfg
+sudo systemctl enable --now haproxy
+sudo firewall-cmd --add-port 80/tcp --permanent
+sudo firewall-cmd --reload
+sudo ss -ntpl
+curl http://localhost:8080
+
+# Monitoring
+# on MON machine
+# install nagios
+sudo zypper install nagios
+sudo systemctl enable --now nagios
+sudo systemctl enable --now httpd
+sudo firewall-cmd --add-service={http,https} --permanent
+sudo firewall-cmd --reload
+sudo htpasswd /etc/nagios/passwd nagiosadmin
+sudo nagios touch /etc/nagios/objects/exam-{str,cnt,lba,wba,wbb}.cfg
+sudo vi /etc/nagios/cfg
+# add the following lines
+cfg_file=/etc/nagios/objects/exam-str.cfg
+cfg_file=/etc/nagios/objects/exam-cnt.cfg
+cfg_file=/etc/nagios/objects/exam-lba.cfg
+cfg_file=/etc/nagios/objects/exam-wba.cfg
+cfg_file=/etc/nagios/objects/exam-wbb.cfg
+# test  configuration
+sudo nagios -v /etc/nagios/nagios.cfg
+sudo systemctl restart nagios
+# add the hosts to the files
+# add http service in wba and wbb
+# test the configuration after each edit in case of errors

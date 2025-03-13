@@ -1,0 +1,16 @@
+---
+- hosts: web
+  become: true
+  
+  tasks:
+    - name: install NGINX Server
+      zypper: name=nginx state=present
+
+    - name: Start the Web Server and Enable it
+      service: name=nginx state=started enabled=true
+
+    - name: Allow web server in the firewall
+      firewalld: service=http state=enabled permanent=yes immediate=yes
+
+    - name: Copy custom index.html file
+      copy: src=~/index.html dest=/usr/share/nginx/html/index.html owner=nginx group=nginx
