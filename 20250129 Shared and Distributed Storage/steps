@@ -72,7 +72,7 @@ homework-vm1:/home/vagrant/homework_task2 /mnt/homework_task2 nfs4 defaults 0 0
 # again as in practice
 # VM1:
 sudo zypper install targetcli-fb
-# the fisk files will be stored here:
+# the disk files will be stored here:
 sudo mkdir homework-task3
 # start the administration tool
 sudo targetcli

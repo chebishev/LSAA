@@ -1,0 +1,144 @@
+# On VM5
+sudo zypper install docker docker-compose docker-compose-switch
+sudo systemctl enable docker
+sudo usermod -G docker -a $USER
+newgrp docker
+sudo systemctl restart docker
+mkdir html
+echo "Linux Guru" > ~/html/index.html
+docker container run -d --name web -p 8080:80 -v ~/html:/usr/share/nginx/html hub.zahariev.pro/nginx
+curl http://localhost:8080
+
+# On VM6
+lsblk
+sudo fdisk /dev/sdb -> and follow the prompts
+sudo fdisk /dev/sdc -> and follow the prompts
+sudo zypper install mdadm
+sudo mdadm --create /dev/md0 --level 0 --raid-devices 2 /dev/sd{b,c}1
+y
+udo mdadm --detail --brief /dev/md0 | sudo tee -a /etc/mdadm.conf
+sudo mkfs.ext4 /dev/md0
+sudo mkdir -p /storage/raidmd
+sudo mount /dev/md0 /storage/raidmd
+blkid /dev/md0
+sudo vi /etc/fstab
+UUID=16d173ea-95a4-4220-bf92-cb35194471f8    /storage/raidmd    ext4    defaults    0 0
+# check with unmount md0 and mount all systems in fstab
+sudo umount /storage/raidmd
+sudo mount -av
+
+sudo zypper install targetcli
+sudo mkdir /var/lib/iscsi-images
+sudo targetcli
+cd backstores/fileio
+create D1 /var/lib/iscsi-images/disk-1gb.img 1G
+cd /iscsi
+create
+cd iqn.2003-01.org.linux-iscsi.vm6.x8664:sn.a6cd2d407caf/tpg1/luns
+create /backstores/fileio/D1
+cd ../acls
+create iqn.1996-04.de.suse:01:c86ecb6e3056
+exit
+sudo systemctl enable --now target
+sudo firewall-cmd --add-service iscsi-target --permanent
+sudo firewall-cmd --reload 
+
+# VM2
+sudo zypper install open-iscsi
+sudo cat /etc/iscsi/initiatorname.iscsi
+sudo iscsiadm -m discovery -t sendtargets -p vm6.lsaa.lab
+sudo iscsiadm -m node --login
+lsblk
+sudo fdisk /dev/sdb
+o, n, p, 1, Enter, Enter, w
+lsblk
+sudo mkfs.xfs /dev/sdb1
+sudo mkdir -p /storage/iscsi
+sudo mount /dev/sdb1 /storage/iscsi
+blkid /dev/sdb1
+sudo vi /etc/fstab
+UUID=637ef212-223e-48e1-a5b8-cd99c78c86a5    /storage/iscsi    xfs    _netdev    0 0
+# check with unmount md0 and mount all systems in fstab
+sudo umount /storage/iscsi
+sudo mount -av
+
+# on VM6
+sudo zypper install nfs-utils
+sudo nfsconf --set nfsd vers4 y
+sudo nfsconf --set nfsd vers3 n
+sudo nfsconf --set nfsd udp n
+sudo nfsconf --set nfsd tpc y
+sydo systemctl enable --now nfs-server
+sudo firewall-cmd --add-service nfs --permanent
+sudo mkdir -p /storage/nfs
+sudo vi /etc/exports
+# add the VM3 and VM4 IP addresses
+/storage/nfs 192.168.10.30(ro) 192.168.10.40(ro)
+sudo exportfs -rav
+sudo systemctl enable --now nfsserver
+sudo firewall-cmd --add-service nfs --permanent
+sudo firewall-cmd --reload
+
+# on VM3 and VM4y
+sudo zypper install nfs-utils
+sudo mkdir -p /storage/export
+sudo mount -t nfs4 vm6:/storage/nfs /storage/export
+df -hT
+sudo umount -at nfs4
+sudo vi /etc/fstab
+vm6:/storage/nfs    /storage/export    nfs4    defaults    0 0
+sudo mount -av
+# on VM4 machine - same steps
+
+# on VM2
+sudo zypper install ansible
+ansible --version
+sudo mkdir -p ~/cm
+sudo vi ~/cm/hosts
+[web]
+vm3.lsaa.lab
+vm4.lsaa.lab
+# create index
+echo "LSAA Exam" > ~/cm/index.html
+touch cm/exam.yaml
+ssh-keygen
+ssh-copy-id exam@vm3.lsaa.lab
+ssh-copy-id exam@vm4.lsaa.lab
+# edit /etc/ansible/ansible.cfg to add the inventory path
+[defaults]
+inventory = ~cm/hosts
+ansible-playbook ~/cm/exam.yaml --syntax-check
+ansible-playbook ~/cm/exam.yaml
+
+# on VM3
+sudo vi /etc/nginx/conf.d/vhost-port.conf
+sudo mkdir /usr/share/nginx/vhost-port
+sudo nginx -t
+sudo systemctl restart nginx
+sudo firewall-cmd --add-port 8080/tcp --permanent
+sudo firewall-cmd --reload
+curl http://localhost
+curl http://localhost:8080
+echo "@chebishev on VM3" | sudo tee /usr/share/nginx/vhost-port/index.html
+# same for VM4
+
+# on VM2:
+sudo zypper install haproxy
+sudo vi /etc/haproxy/haproxy.cfg
+sudo systemctl enable --now haproxy
+sudo firewall-cmd --add-port 80/tcp --permanent
+sudo firewall-cmd --reload
+sudo ss -ntpl
+curl http://localhost:8080
+
+# on VM1
+sudo zypper install nagios
+sudo systemctl enable --now nagios
+sudo firewall-cmd --add-service={http,https} --permanent
+sudo firewall-cmd --reload
+sudo htpasswd -c /etc/nagios/passwd nagiosadmin
+LSAA-Exam
+LSAA-Exam
+sudo touch /etc/nagios/objects/exam-vm{2..6}.cfg
+sudo nagios -v /etc/nagios/nagios.cfg
+sudo systemctl restart nagios

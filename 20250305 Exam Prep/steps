@@ -41,11 +41,12 @@ sudo mkdir /var/lib/iscsi-images
 sudo targetcli
 cd backstores/fileio
 create D1 /var/lib/iscsi-images/D1GB.img 1G
-cd iscsi
+cd /iscsi
 create iqn.2025-01.lab.lsaa:str.tgt1
 cd iqn.2025-01.lab.lsaa:str.tgt1/tpg1/luns
 create /backstores/fileio/D1
-cd ../aclscreate iqn.2025-01.lab.lsaa:lba.init1
+cd ../acls 
+create iqn.2025-01.lab.lsaa:lba.init1
 exit
 sudo systemctl enable --now target
 sudo firewall-cmd --add-service iscsi-target --permanent
@@ -63,9 +64,9 @@ sudo mkdir -p /storage/iscsi
 sudo mount /dev/sdb1 /storage/iscsi
 blkid /dev/sdb1
 sudo vi /etc/fstab
-# UUID=""    /storage/iscsi    xfs    -netdev    0 0
-# check with unmount md0 and mount all systems in fstab
-sudo umount /storage/raidmd
+# UUID=""    /storage/iscsi    xfs    _netdev    0 0
+# check with unmount /dev/sdb1 and mount all systems in fstab
+sudo umount /storage/iscsi
 sudo mount -av
 
 # on STR machine
@@ -103,7 +104,7 @@ sudo vi hosts
 wba.lsaa.lab
 wbb.lsaa.lab
 # create index
-echo "LSAA Exam" > ~/index.hmtl
+echo "LSAA Exam" > ~/index.html
 touch exam.yml
 # or
 touch exam.yaml
@@ -146,8 +147,8 @@ sudo systemctl enable --now httpd
 sudo firewall-cmd --add-service={http,https} --permanent
 sudo firewall-cmd --reload
 sudo htpasswd /etc/nagios/passwd nagiosadmin
-sudo nagios touch /etc/nagios/objects/exam-{str,cnt,lba,wba,wbb}.cfg
-sudo vi /etc/nagios/cfg
+sudo touch /etc/nagios/objects/exam-{str,cnt,lba,wba,wbb}.cfg
+sudo vi /etc/nagios/nagios.cfg
 # add the following lines
 cfg_file=/etc/nagios/objects/exam-str.cfg
 cfg_file=/etc/nagios/objects/exam-cnt.cfg
