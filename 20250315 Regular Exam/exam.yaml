@@ -13,4 +13,4 @@
       firewalld: service=http state=enabled permanent=yes immediate=yes
 
     - name: Copy custom index.html file
-      copy: src=index.html dest=/srv/www/htdocs/index.html owner=nginx group=nginx
+      copy: src=~/cm/index.html dest=/srv/www/htdocs/index.html owner=nginx group=nginx
